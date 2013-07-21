@@ -26,7 +26,8 @@
     protected 
       $api      = NULL,
       $css      = NULL,
-      $hierarchy= array();
+      $hierarchy= array(),
+      $classMap = array();
     
     /**
      * Returns the first sentence inside a given text
@@ -80,25 +81,23 @@
         $raw= $t;
         $components= '';
       }
-      foreach ($this->hierarchy as $level) {
-        foreach ($level['contents'] as $docs) {
-          foreach ($docs as $doc) {
-            if ($doc->qualifiedName() !== $raw) continue;
-            return sprintf(
-              '<a class="type" title="%s in %s" href="%s%s.html%s">%s%s</a>%s',
-              $doc->classType(),
-              $doc->containingPackage()->name(),
-              $base,
-              strtr($raw, '.', '/'),
-              $anchor ? '#'.$anchor : '',
-              $doc->name(),
-              $anchor ? '::'.$anchor.'()' : '',
-              $components
-            );
-          }
-        }
-      }
-      return $t;
+
+      // Return type if no class exists
+      if (!isset($this->classMap[$raw])) return $t;
+
+
+      $doc= $this->classMap[$raw];
+      return sprintf(
+        '<a class="type" title="%s in %s" href="%s%s.html%s">%s%s</a>%s',
+        $doc->classType(),
+        $doc->containingPackage()->name(),
+        $base,
+        strtr($raw, '.', '/'),
+        $anchor ? '#'.$anchor : '',
+        $doc->name(),
+        $anchor ? '::'.$anchor.'()' : '',
+        $components
+      );
     }
     
     /**
@@ -483,15 +482,15 @@
       Console::write('[');
       $this->hierarchy= array();
 
-      $seen= array();
       while ($this->classes->hasNext()) {
         $class= $this->classes->next();
 
-        if (isset($seen[$class->qualifiedName()])) {
+        if (isset($this->classMap[$class->qualifiedName()])) {
           continue;
         }
 
-        $seen[$class->qualifiedName()]= TRUE;
+        // Keep reference to class for later lookup
+        $this->classMap[$class->qualifiedName()]= $class;
 
         $key= $class->containingPackage()->name();
         if (!isset($this->hierarchy[$key])) {
@@ -516,9 +515,10 @@
       }
       
       // Generate HTML files
-      Console::write('>');
+      Console::writeLine(']');
+
       $this->writeOverview($this->hierarchy, $target)->close();
-      Console::writeLine($target, ']');
+      Console::writeLine('> ', $target, ']');
     }
   }
 ?>
