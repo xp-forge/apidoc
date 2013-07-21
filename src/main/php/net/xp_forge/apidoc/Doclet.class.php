@@ -389,6 +389,7 @@
      * @return  io.streams.OutputStream
      */
     protected function writePackage(array $definitions, Folder $target) {
+      Console::writeLine('> Writing package ', $definitions['doc']->name(), ' (', count($definitions['contents'], TRUE), ' types)');
       with ($stream= new FileOutputStream(new File($target, 'summary.html'))); {
         $this->writeHeader($definitions['doc']->name(), $stream);
 
