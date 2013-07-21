@@ -15,6 +15,7 @@
     'io.FileUtil',
     'io.File',
     'io.Folder',
+    'io.streams.BufferedOutputStream',
     'io.streams.FileOutputStream'
   );
   
@@ -162,12 +163,8 @@
      */
     protected function directSubclassesOf(ClassDoc $class) {
       $r= array();
-      foreach ($this->hierarchy as $level) {
-        foreach ($level['contents'] as $docs) {
-          foreach ($docs as $doc) {
-            if ($class->equals($doc->superclass)) $r[]= $doc;
-          }
-        }
+      foreach ($this->classMap as $name => $doc) {
+        if ($class->equals($doc->superclass)) $r[]= $doc;
       }
       return $r;
     }
@@ -407,7 +404,7 @@
           foreach ($docs as $doc) {
             $stream->write('<li><a href="'.$doc->name().'.html">'.$doc->name().'</a>');
             $stream->write('<p>'.$this->firstSentence($doc->commentText()).'</p></li>');
-            $this->writeDoc($doc, new FileOutputStream(new File($target, $doc->name().'.html')))->close();
+            $this->writeDoc($doc, new BufferedOutputStream(new FileOutputStream(new File($target, $doc->name().'.html')), 8192))->close();
           }
           $stream->write('</ul></fieldset>');
         }
@@ -425,6 +422,7 @@
      * @return  io.streams.OutputStream
      */
     protected function writeOverview(array $packages, Folder $target) {
+      Console::writeLine('Writing overview for ', sizeof($packages), ' packages');
       with ($stream= new FileOutputStream(new File($target, 'index.html'))); {
         $this->writeHeader('Overview', $stream);
         $stream->write('<h4><a href="index.html">Overview</a></h4>');
